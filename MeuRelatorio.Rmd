@@ -1,0 +1,426 @@
+title: "Relatório Descritivo do Conjunto de Dados Companhia MB"
+documentclass: article
+fontsize: 11pt
+header-includes:
+   - \usepackage[brazil]{babel}
+   - \usepackage{geometry}
+   - \geometry{
+      a4paper,
+      inner=20mm,
+      top=20mm,
+      outer=20mm,
+      bottom=20mm
+      }
+date: "`r format(Sys.time(), '%d de %B de %Y')`"
+output:
+  # odt_document:
+  pdf_document:
+    # toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment=NA, fig.width=10, fig.asp = 0.618, fig.align = "center", out.width = "75%")
+load(file = "../dados/ConjuntosDeDados.RData")
+```
+
+# Introdução
+
+Neste trabalho analisa-se o conjunto de dados Companhia MB.
+Esse conjunto de dados foi obtido da seguinte referência:
+
+<cite>Bussab, W. O. e Morettin, P. A. **Estatística Básica**. 8 ed. 2013</cite>
+
+O conjunto de dados refere-se à uma pesquisa feita com empregados da fictícia companhia MB.
+Se tratam, portanto, de dados artificiais criados para fins didáticos.
+
+Para facilitar o estudo chamaremos os dados por CMB:
+```{r}
+CMB <- CompanhiaMB
+```
+
+Para realizar essas análises será necessária a seguinte biblioteca:
+```{r}
+library("moments")
+```
+
+Além disso vamos definir a seguinte função para calcular a variância populacional quando necessária:
+```{r}
+pvar <- function(x) sum((x - mean(x))**2) / length(x)
+```
+
+O conjunto de dados possui as seguintes dimensões:
+```{r}
+dim(CMB)
+```
+Portanto, esse conjunto de dados corresponde à `r dim(CMB)[1]` observações de `r dim(CMB)[2]` variáveis.
+As variáveis consideradas são as seguintes:
+```{r}
+str(CMB)
+```
+Note que as variáveis ** e *Meses* foram usadas no cálculo da variável *Idade* por meio do seguinte comando:
+```{r}
+round(CMB$Anos+CMB$Meses/12,2)
+CMB$Idade
+```
+Portanto vamos ignorar as variáveis *Anos* e *Meses* em nosso estudo e nos focar apenas na variável *Idade*.
+
+Desta forma as variáveis de interesse podem ser classificadas da seguinte forma:
+
+- *Estado Civil*: Categórica Nominal
+- *Grau de Instrução*: Categórica Ordinal
+- *Número de Filhos*: Quantitativa Discreta
+- *Salários*: Quantitativa Contínua
+- *Idade*: Quantitativa Contínua
+- *Região de Procedência*: Categórica Nominal
+
+# Análise Univariada
+
+## Variável *Estado Civil*
+
+A seguir vemos a distribuições de frequências absolutas para a variável *Estado Civil*:
+```{r}
+FreqAbs <- table(CMB$Estado.Civil)
+FreqAbs
+```
+E a correspondente distribuição de frequências relativas:
+```{r}
+FreqRel <- prop.table(FreqAbs)
+FreqRel
+```
+Note que a maioria dos entrevistados é casado, correspondendo a uma proporção de `r round(FreqRel[1],2)` para 1.
+
+Um gráfico adequado para essa variável é o gráfico de barras:
+```{r}
+barplot(FreqAbs, main = "Distribuição do Estado Civil")
+```
+
+## Variável *Grau de Instrução*
+
+As distribuições de frequências absolutas e relativas para a variável *Grau de Instrução* são:
+```{r}
+FreqAbs <- table(CMB$Grau.de.Instrução)
+FreqAbs
+FreqRel <- prop.table(FreqAbs)
+FreqRel
+```
+Note que a maioria dos entrevistados é casado, correspondendo a uma proporção de `r round(FreqRel[2],2)` para 1.
+
+Um gráfico adequado para essa variável é o gráfico de setores:
+```{r}
+pie(FreqAbs, main = "Distribuição do Grau de Instrução")
+```
+
+Como visto na distribuição de frequências o gráfico de setores apresenta o maior setor para o ensino médio e o menor para  ensino superior.
+
+## Variável *Número de Filhos*
+
+Um breve sumário sobre essa variável pode ser obtido pelo comando:
+```{r}
+summary(CMB$Filhos)
+```
+Note que o número de filhos varia de `r min(CMB$Filhos,na.rm = T)` à `r max(CMB$Filhos,na.rm = T)`.
+O número médio de filhos é `r mean(CMB$Filhos,na.rm = T)` com mediana igual à `r median(CMB$Filhos,na.rm = T)`.
+Note que a moda do número de filhos é `r names(which.max(FreqAbs))`, havendo `r max(FreqAbs)` funcionários com essa quantidade de filhos.
+Isso justifica o fato da mediana ser igual ao terceiro quartil nesse caso.
+
+A seguir vemos a distribuição de frequências absolutas e relativa para a variável *Número de Filhos*:
+```{r}
+FreqAbs <- table(CMB$Filhos)
+FreqAbs
+```
+A grande maioria dos funcionários tem menos que `r names(which.max(FreqAbs))` filhos.
+Note que apenas os filhos dos funcionários casados foram computados, por isso temos que a somatória do total de entrevistados não é `r nrow(CMB)`.
+```{r}
+sum(FreqAbs)
+```
+Há apenas `r sum(FreqAbs)` funcionários casados como observado anteriormente.
+
+A distribuição de frequências relativas revela as proporções de funcionários que tem uma determinada quantidade de filhos:
+```{r}
+FreqRel <- prop.table(FreqAbs)
+FreqRel
+```
+
+Um gráfico adequado para essa variável é o gráfico de barras:
+```{r}
+barplot(FreqAbs)
+```
+
+## Variável *Salário*
+
+Um sumário preliminar dessa variável é obtido pelo comando
+```{r}
+summary(CMB$Salário)
+```
+Note que os salários nessa companhia estão entre R\$4000 e R\$23000.
+A amplitude, o desvio interquartil e o desvio padrão são dados respectivamente por:
+```{r}
+diff(range(CMB$Salário))
+IQR(CMB$Salário)
+sd(CMB$Salário)
+```
+Desse modo a distância do menor ao maior salário é de R\$19300, a porção das 50\% estatísticas de ordem centrais se dispersam num raio de R\$6507,50 e em média os salários se afastam da média por aproximadamente R\$4587,45.
+
+Um gráfico adequado é o histograma:
+```{r}
+hist(CMB$Salário,
+     main = "Histograma do Salário",
+     ylab = "Freq.",
+     xlab = "Faixas de Salário")
+```
+
+Pode-se observar que a faixa salarial de maior freqüência é de 9000 à 10000.
+Além disso a distribuição apresenta assimetria à direita.
+O coeficiente de assimetria é dado por:
+```{r}
+skewness(CMB$Salário)
+```
+Como o coeficiente de assimetria é positivo, fica confirmada a assimetria à direita.
+
+Um outro gráfico útil é o boxplot:
+```{r}
+boxplot(CMB$Salário,
+        main = "Boxplot do Salário",
+        horizontal = TRUE)
+```
+Veja que os dados não apresentam valores extremos.
+A distância entre o terceiro quartil e o máximo é próxima à distância do terceiro quartil ao mínimo indicando que as 25\% maiores estatísticas de ordem se distribuem numa amplitude próxima que as 75\% menores.
+
+## Variável *Idade*
+
+Um sumário preliminar dessa variável é obtido pelo comando.
+```{r}
+summary(CMB$Idade)
+```
+As idades dos funcionários variam de 20,83 à 48,92.
+Note que os valores da média e da mediana são muito próximos o que é uma característica de dados com distribuições simétricas.
+O primeiro e o terceiro quartis estão mais próximos da mediana do que do mínimo e do máximo respectivamente o que indica que os 50\% das estatísticas de ordem centrais se concentram mais intensamente em torno da mediana.
+
+A amplitude, o desvio interquartil e o desvio padrão são dados respectivamente por:
+```{r}
+diff(range(CMB$Idade))
+IQR(CMB$Idade)
+sd(CMB$Idade)
+```
+O funcionário mais velho da companhia tem 28,09 anos de idade a mais que o mais jovem, a porção das 50\% estatísticas de ordem centrais das idades se dispersam num raio de 9,85 anos e em média as idades se afastam da média por aproximadamente 6,7 anos.
+O coeficiente de assimetria é muito próximo de zero, indicando que os dados se distribuem de forma aproximadamente simétrica em torno da média/mediana:
+```{r}
+skewness(CMB$Idade)
+```
+
+O histograma dos dados confirma essa simetria:
+```{r}
+hist(CMB$Idade,
+     main = "Histograma da Idade",
+     ylab = "Freq.",
+     xlab = "Faixas Etárias")
+```
+A faixa etária com a maior quantidade de funcionários é de 30 à 35 anos.
+Há apenas dois funcionários com menos de 25 anos e, simetricamente, apenas dois funcionários com mais de 45 anos.
+
+O boxplot para essa variável é o seguinte:
+```{r}
+boxplot(CMB$Idade,
+        main = "Boxplot da Idade",
+        horizontal = TRUE)
+```
+Como apontado anteriormente, o primeiro e o terceiro quartis estão mais próximos da mediana do que, respectivamente, do mínimo e do máximo indicando que as 50\% estatísticas de ordem centrais estão muito concentradas em torno da mediana.
+
+## Variável *Região de Procedência*
+
+A distribuição de frequências absolutas e relativas para a variável *Região de Procedência* são dadas respectivamente por:
+```{r}
+FreqAbs <- table(CMB$Procedência)
+FreqAbs
+FreqRel <- prop.table(FreqAbs)
+FreqRel
+```
+As proporções das três Regiões de Procedência são bastante próximas.
+
+Um gráfico adequado para essa variável é o gráfico de barras:
+```{r}
+barplot(FreqAbs, main = "Distribuição da Região de Procedência")
+```
+Como esperado as barras tem alturas similares.
+A *capital* é a região com menor número de representantes e *outra* é a com maior número de representantes.
+
+# Análise Bivariada
+
+## Variáveis *Grau de Instrução* e *Região de Procedência*
+
+Uma tabela de contingência para essas variáveis é a seguinte:
+```{r}
+TC <- table(CMB$Grau.de.Instrução,CMB$Procedência)
+TC
+```
+Essa tabela apresenta a distribuição conjunta dessas variáveis. As distribuições marginais para cada variável podem ser encontradas nas seções de análise univariada.
+
+A tabela de distribuição conjunta as proporções relativas ao total geral pode ser obtida da seguinte forma
+```{r}
+prop.table(TC)
+```
+Aqui podemos obter várias informações como a de que 19.4\% dos entrevistados tem ensino médio e são da capital, correspondendo à maior proporção obtida dentre todas as combinações possíveis.
+As menores proporções obtidas foram para os funcionários com nível superior, a distribuição das proporções de funcionários com nível superior foi uniforme com relação à região de procedência.
+
+A distribuição das proporções relativas ao total das linhas pode ser obtido da seguinte forma
+```{r}
+PTC1 <- prop.table(TC,margin = 1)
+PTC1
+```
+Cada linha dessa tabulação apresenta a proporção de pessoas com um determinado nível de instrução em cada uma das três regiões de procedência.
+Podemos notar que dentre as pessoas com ensino fundamental a maioria provem de outra região (41,67\%),
+dentre as pessoas com ensino médio a maioria provém do interior (38,89\%) e as pessoas com ensino superior se distribuem de modo uniforme nas três regiões de procedência consideradas.
+
+Essa tabela pode ser representada por meio de um gráfico de barras:
+```{r}
+barplot(t(PTC1),legend.text = colnames(PTC1),beside = T)
+```
+Note que as barras das regiões de procedência apresentam alturas próximas para cada um dos graus de instrução indicando pouca evidência sobre a associação entre as variáveis *Região de Procedência* e *Grau de Instrução*.
+
+A distribuição das proporções relativas ao total das linhas pode ser obtido da seguinte forma  
+```{r}
+PTC2 <- prop.table(TC,margin = 2)
+PTC2
+```
+Cada coluna dessa tabulação apresenta a proporção de pessoas provenientes de uma determinada região em cada um dos três graus de instrução considerados.
+Podemos notar que em todas as regiões de procedência a proporção de pessoas com ensino médio foi sempre a maior: 45,45\% na capital, 58,33\% no interior e 46,15\% em outras regiões.
+
+Essa tabela também pode ser representada por meio de um gráfico de barras empilhadas:
+```{r}
+barplot(PTC2,legend.text = rownames(PTC2))
+```
+Note, novamente, que as barras tem proporções similares entre si, o que indica que as variáveis consideradas podem não ter associação.
+
+O coeficiente Qui-quadrado pode ser obtido da seguinte forma:
+```{r warning=FALSE}
+TesteQui2 <- summary(TC)
+CoefQui2 <- TesteQui2$statistic
+CoefQui2
+```
+
+O coeficiente de contingência pode ser obtido da seguinte forma:
+```{r}
+CoefC <- sqrt(CoefQui2/(CoefQui2+sum(TC)))
+CoefC
+```
+
+Finalmente, o coeficiente de contingência $T$ pode ser obtido da seguinte forma:
+```{r}
+CoefT <- sqrt(CoefQui2/(sum(TC)*(nrow(TC)-1)*(ncol(TC)-1)))
+CoefT
+```
+Os três coeficiente apresentam valores muito próximos de zero, o que indica um grau bastante fraco de associação entre as variáveis *Região de Procedência* e *Grau de Instrução*.
+
+## Variáveis *Idade* e *Número de Filhos*
+
+Note que o gráfico de dispersão entre as variáveis *Idade* e *Número de Filhos* indica uma dependência linear direta entre as duas variáveis, uma vez que os dados aparentam se agrupar em torno de uma reta crescente.
+```{r}
+plot(x = CMB$Idade,
+     y = CMB$Filhos,
+     xlab = "Idade",
+     ylab = "Número de Filhos",
+     main = "Dispersão da Idade e do Número de Filhos")
+```
+
+O coeficiente de correlação entre essas duas variáveis é relativamente bem próximo de um o que indica uma correlação linear direta entre as duas variáveis.
+```{r}
+cor(x = CMB$Filhos, y = CMB$Idade, use = "complete.obs")
+```
+
+Note que a covariância amostral entre as duas variáveis é dada por:
+```{r}
+cov(x = CMB$Filhos, y = CMB$Idade, use = "complete.obs")
+```
+
+A covariância é relativamente próxima de zero, indicando uma baixa dispersão dos dados.
+
+A reta de regressão que minimiza os erros quadráticos médios é obtida pelo comando
+```{r}
+reta <- lm(formula = Filhos~Idade, data = CMB)
+reta$coefficients
+```
+Essa reta terá a seguinte equação
+$$
+\hat{y}=0,158x-3,978.
+$$
+onde $x$ é um valor para a idade e $\hat{y}$ é o correspondente valor predito pelo modelo linear para o número de filhos.
+
+```{r}
+plot(x = CMB$Idade,
+     y = CMB$Filhos,
+     xlab = "Idade",
+     ylab = "Número de Filhos",
+     main = "Reta de regressão do Número de Filhos em função da Idade")
+abline(reta)
+```
+
+Para usarmos o modelo para predizer o valor médio do número de filhos para as idades de 30, 35 e 40 anos basta:
+```{r}
+PredizerFilhos <- data.frame(Idade = c(30,35,40))
+PredicoesObtidas <- predict(reta,PredizerFilhos)
+Sumario <- data.frame(PredizerFilhos,PredicoesObtidas)
+Sumario
+```
+Portanto, em média os funcionários com 30 anos possuem 0,76 filhos, com 35 anos os funcionários tem em média 1,55 filhos e com 40 anos de idade os funcionários acumulam uma média de 2,34 filhos.
+Note agora que as idades dos funcionarios estão no intervalo:
+```{r}
+range(CMB$Idade)
+```
+Portanto, não podemos usar esse modelo para predizer o número de filhos dos funcionários usando idades fora desse intervalo.
+
+## Variáveis *Grau de Instrução* e *Salários*
+
+Um gráfico adequado para analisar esse par de variáveis é o seguinte:
+```{r}
+boxplot(Salário~Grau.de.Instrução, data = CMB, horizontal = TRUE)
+```
+O gráfico deixa bem claro que a distribuição da variável *Salários* muda significativamente em função do *Grau de Instrução*.
+
+Algumas medidas resumo para a variável *Salários* segundo o *Grau de Instrução*. podem ser obtidas pelo comando:
+```{r}
+aggregate(Salário~Grau.de.Instrução, FUN = summary, data=CMB)
+```
+Todas as estatísticas aumentam consideravelmente a medida em que o grau de instrução se eleva indicando, mais uma vez, uma clara associação entre essas variáveis.
+O mesmo ocorre com os valores da variância populacional
+```{r}
+Variancias <- aggregate(Salário~Grau.de.Instrução, FUN = pvar, data=CMB)
+Variancias
+```
+
+Para calcular o valor do coeficiente de explicação entre essas variáveis basta:
+```{r}
+pesos <- tabulate(CMB$Grau.de.Instrução)
+1 - weighted.mean(x = Variancias$Salário,w = pesos)/pvar(CMB$Salário)
+```
+O valor desse coeficiente indica que 41,33\% da variação total da variável *Salários* é explicada pela variável *Grau de Instrução*.
+
+## Variáveis *Grau de Instrução* e *Idade*
+
+Um gráfico adequado para analisar esse par de variáveis é o seguinte:
+```{r}
+boxplot(Idade~Grau.de.Instrução, data = CMB, horizontal = TRUE)
+```
+O gráfico mostra que as distribuições da variável *Idade* não são iguais para os diferentes valores da variável *Grau de Instrução*.
+
+Algumas medidas resumo para a variável *Idade* segundo o *Grau de Instrução*. podem ser obtidas pelo comando:
+```{r}
+aggregate(Idade~Grau.de.Instrução, FUN = summary, data=CMB)
+```
+Em geral as estatísticas correspondentes divergem bastante para os diferentes valores da variável *Grau de Instrução*, o que nos permite afirmar que existe algum grau de dependência entre essas variáveis.
+O mesmo ocorre com os valores da variância populacional:
+```{r}
+Variancias <- aggregate(Idade~Grau.de.Instrução, FUN = pvar, data=CMB)
+Variancias
+```
+
+Para calcular o valor do coeficiente de explicação entre essas variáveis basta:
+```{r}
+pesos <- tabulate(CMB$Grau.de.Instrução)
+1 - weighted.mean(x = Variancias$Idade,w = pesos)/pvar(CMB$Idade)
+```
+O valor desse coeficiente indica que 5,83\% da variação total da variável *Idade* é explicada pela variável *Grau de Instrução*.
+Logo há uma maior relação entre as variáveis *Salários* e *Grau de Instrução* do que entreas variáveis *Idade* e *Grau de Instrução*.
+
+# Conclusão
+
+???
